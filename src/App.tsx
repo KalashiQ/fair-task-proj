@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/shared/providers';
+import { Header } from '@/shared/ui';
 import { AppRouter } from './app/AppRouter';
 import './App.css';
 
@@ -9,7 +10,17 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
-      <AppRouter />
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100vh',
+        backgroundColor: '#ffffff' // Белый фон для отступов
+      }}>
+        <Header />
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          <AppRouter />
+        </div>
+      </div>
     </AuthProvider>
   );
 }

@@ -2,8 +2,8 @@ import React from 'react';
 import styled from 'styled-components';
 
 const DashboardContainer = styled.div`
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%; /* Занимаем всю доступную высоту */
   background-color: #FFFFFF;
   display: flex;
   align-items: center;
@@ -11,9 +11,6 @@ const DashboardContainer = styled.div`
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  position: fixed;
-  top: 0;
-  left: 0;
 `;
 
 const DashboardTitle = styled.h1`

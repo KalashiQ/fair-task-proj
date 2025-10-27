@@ -11,8 +11,8 @@ interface AuthState {
  */
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    user: null,
+    isAuthenticated: false, 
+    user: 'admin',
   });
 
   const login = useCallback((email: string, password: string): boolean => {
