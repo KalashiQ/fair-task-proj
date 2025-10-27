@@ -11,7 +11,7 @@ interface AuthState {
  */
 export const useAuth = () => {
   const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false, 
+    isAuthenticated: true, // По умолчанию аутентифицирован для Dashboard
     user: 'admin',
   });
 

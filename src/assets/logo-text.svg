@@ -1,0 +1,6 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern "F" letter -->
+  <path d="M8 8H32V12H14V20H28V24H14V36H8V8Z" fill="#00B4DD"/>
+  <!-- Text "airTask" -->
+  <text x="38" y="28" font-family="Golos Text, sans-serif" font-size="24" font-weight="400" fill="black">airTask</text>
+</svg>

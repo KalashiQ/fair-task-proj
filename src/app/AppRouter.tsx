@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthPage } from '@/pages/AuthPage';
-import { DashboardPage } from '@/pages/DashboardPage';
+import { AuthPage, DashboardPage, SettingsPage } from '@/pages';
 import { useAuthContext } from '@/shared/hooks';
 
 /**
@@ -21,6 +20,10 @@ export const AppRouter: React.FC = () => {
         <Route 
           path="/dashboard" 
           element={isAuthenticated ? <DashboardPage /> : <Navigate to="/auth" replace />} 
+        />
+        <Route 
+          path="/settings" 
+          element={isAuthenticated ? <SettingsPage /> : <Navigate to="/auth" replace />} 
         />
         <Route 
           path="/" 

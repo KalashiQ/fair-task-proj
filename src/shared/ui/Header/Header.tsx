@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
+import { useNavigate, useLocation } from 'react-router-dom';
 import logoImage from '@/assets/logo.svg';
+import logoText from '@/assets/logo-text.svg';
 import chartsIcon from '@/assets/charts.svg';
 import settingsIcon from '@/assets/settings.svg';
-import sunIcon from '@/assets/sun.svg';
-import moonIcon from '@/assets/moon.svg';
 
 /**
  * Интерфейс для пропсов Header компонента
@@ -37,14 +37,21 @@ const LeftSection = styled.div`
 `;
 
 /**
- * Текст логотипа FairTask
+ * Логотип FairTask
  */
-const LogoText = styled.h1`
-  font-size: 24px;
-  font-weight: 700;
-  color: #333333;
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+const FairTaskLogo = styled.img`
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+`;
+
+/**
+ * Логотип Zunami
+ */
+const ZunamiLogo = styled.img`
+  height: 40px;
+  width: auto;
+  object-fit: contain;
 `;
 
 /**
@@ -55,18 +62,7 @@ const CenterSection = styled.div`
   align-items: center;
   gap: 12px;
   position: absolute;
-  left: 40%; /* Сдвигаем левее от центра */
-  transform: translateX(-50%);
-`;
-
-/**
- * Контейнер для кнопки темы
- */
-const ThemeSection = styled.div`
-  display: flex;
-  align-items: center;
-  position: absolute;
-  left: calc(40% + 260px); /* Сдвигаем правее от всех кнопок (5 кнопок * 52px) */
+  left: 50%; /* Центрируем по горизонтали */
   transform: translateX(-50%);
 `;
 
@@ -117,31 +113,6 @@ const PlaceholderButton = styled.div`
   cursor: not-allowed;
 `;
 
-/**
- * Кнопка смены темы
- */
-const ThemeToggleButton = styled.button<{ isDark: boolean }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 5px;
-  border: 2px solid #C8C8C8;
-  background-color: ${props => props.isDark ? '#BABABA' : 'transparent'};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  
-  &:hover {
-    border-color: #00B4DD;
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-`;
 
 /**
  * Контейнер для правой части с логотипом
@@ -151,45 +122,52 @@ const RightSection = styled.div`
   align-items: center;
 `;
 
-/**
- * Логотип изображение
- */
-const LogoImage = styled.img`
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-`;
 
 /**
  * Header компонент приложения
- * Содержит кнопку смены темы, логотип FairTask слева, кнопки в центре и логотип справа
+ * Содержит логотип FairTask слева, кнопки навигации в центре и логотип справа
  */
 export const Header: React.FC<HeaderProps> = ({ className }) => {
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const toggleTheme = () => {
-    setIsDarkTheme(!isDarkTheme);
-    console.log(`Theme switched to: ${!isDarkTheme ? 'dark' : 'light'}`);
+  const handleSettingsClick = () => {
+    navigate('/settings');
   };
+
+  const handleChartsClick = () => {
+    navigate('/dashboard');
+  };
+
+  const isSettingsActive = location.pathname === '/settings';
+  const isDashboardActive = location.pathname === '/dashboard';
 
   return (
     <HeaderContainer className={className}>
       {/* Левая часть - логотип FairTask */}
       <LeftSection>
-        <LogoText>FairTask</LogoText>
+        <FairTaskLogo src={logoText} alt="FairTask" />
       </LeftSection>
 
       {/* Центральная часть - кнопки */}
       <CenterSection>
         <WorkingButton 
-          onClick={() => console.log('Settings button clicked')}
+          onClick={handleSettingsClick}
           aria-label="Settings"
+          style={{ 
+            borderColor: isSettingsActive ? '#00B4DD' : '#C8C8C8',
+            backgroundColor: isSettingsActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
+          }}
         >
           <ButtonIcon src={settingsIcon} alt="Settings" />
         </WorkingButton>
         <WorkingButton 
-          onClick={() => console.log('Charts button clicked')}
+          onClick={handleChartsClick}
           aria-label="Charts"
+          style={{ 
+            borderColor: isDashboardActive ? '#00B4DD' : '#C8C8C8',
+            backgroundColor: isDashboardActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
+          }}
         >
           <ButtonIcon src={chartsIcon} alt="Charts" />
         </WorkingButton>
@@ -198,23 +176,9 @@ export const Header: React.FC<HeaderProps> = ({ className }) => {
         <PlaceholderButton aria-label="Placeholder button 3" />
       </CenterSection>
 
-      {/* Кнопка темы */}
-      <ThemeSection>
-        <ThemeToggleButton 
-          isDark={isDarkTheme}
-          onClick={toggleTheme}
-          aria-label={isDarkTheme ? 'Switch to light theme' : 'Switch to dark theme'}
-        >
-          <ButtonIcon 
-            src={isDarkTheme ? moonIcon : sunIcon} 
-            alt={isDarkTheme ? 'Moon' : 'Sun'} 
-          />
-        </ThemeToggleButton>
-      </ThemeSection>
-
       {/* Правая часть - логотип */}
       <RightSection>
-        <LogoImage 
+        <ZunamiLogo 
           src={logoImage} 
           alt="Zunami Logo"
         />
