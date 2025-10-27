@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { AnimatedButton } from '@/shared/ui';
+import { useAuthContext } from '@/shared/hooks';
 
 interface LoginFormData {
   email: string;
@@ -91,6 +92,7 @@ export const LoginForm: React.FC = () => {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuthContext();
 
   const handleInputChange = (field: keyof LoginFormData) => (
     event: React.ChangeEvent<HTMLInputElement>
@@ -103,7 +105,10 @@ export const LoginForm: React.FC = () => {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    console.log('Login data:', formData);
+    const success = login(formData.email, formData.password);
+    if (!success) {
+      console.log('Неверные учетные данные');
+    }
   };
 
   const togglePasswordVisibility = () => {
@@ -142,6 +147,10 @@ export const LoginForm: React.FC = () => {
       <AnimatedButton
         text="Войти"
         type="submit"
+        onClick={() => {
+          const event = new Event('submit') as unknown as React.FormEvent<HTMLFormElement>;
+          handleSubmit(event);
+        }}
         width={167}
         height={47}
         fontSize={20}

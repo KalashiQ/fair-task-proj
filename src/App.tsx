@@ -1,12 +1,17 @@
-import { AuthPage } from './pages/AuthPage';
+import { AuthProvider } from '@/shared/providers';
+import { AppRouter } from './app/AppRouter';
 import './App.css';
 
 /**
  * Главный компонент приложения
- * Отображает страницу авторизации
+ * Оборачивает приложение в провайдеры и роутер
  */
 function App() {
-  return <AuthPage />;
+  return (
+    <AuthProvider>
+      <AppRouter />
+    </AuthProvider>
+  );
 }
 
 export default App
