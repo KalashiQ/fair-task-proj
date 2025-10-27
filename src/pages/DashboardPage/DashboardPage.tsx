@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Header, PageHeader } from '@/shared/ui';
+import { Header, PageHeader, StatsBlock } from '@/shared/ui';
+import { ChartWidget } from '@/widgets/ChartWidget';
 
 const DashboardContainer = styled.div`
   width: 100%;
@@ -22,25 +23,33 @@ const DashboardContent = styled.div`
   box-sizing: border-box;
 `;
 
-const DashboardTitle = styled.h1`
-  color: #1F1F1F;
-  font-size: 32px;
-  font-weight: 600;
-  font-family: 'Inter';
-  margin: 0;
-`;
-
 /**
  * Страница Dashboard
  * Отображает главную панель управления приложения
  */
 export const DashboardPage: React.FC = () => {
+  const [selectedPeriod, setSelectedPeriod] = useState<'hour' | 'day' | 'week'>('hour');
+
+  const getLabelByPeriod = (period: 'hour' | 'day' | 'week'): string => {
+    switch (period) {
+      case 'hour':
+        return 'за последний час';
+      case 'day':
+        return 'за последний день';
+      case 'week':
+        return 'за последнюю неделю';
+      default:
+        return 'за последний час';
+    }
+  };
+
   return (
     <DashboardContainer>
       <Header />
       <PageHeader title="Dashboard" />
+      <StatsBlock value="8952" label={getLabelByPeriod(selectedPeriod)} />
+      <ChartWidget onPeriodChange={setSelectedPeriod} />
       <DashboardContent>
-        <DashboardTitle>Dashboard</DashboardTitle>
       </DashboardContent>
     </DashboardContainer>
   );
