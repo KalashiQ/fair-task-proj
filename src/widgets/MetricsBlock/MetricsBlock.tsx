@@ -338,13 +338,13 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
           <LeftBlockPrimary>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', padding: '0 16px 0 24px', height: '100%', justifyContent: 'center', alignItems: 'flex-start' }}>
               <SKdT style={{ width: '100%', fontSize: 48, lineHeight: 1, wordWrap: 'break-word', textAlign: 'left' }}>132 896</SKdT>
-              <div style={{ width: '100%', color: 'black', fontSize: 20, lineHeight: 1, fontFamily: 'Golos Text', fontWeight: '400', wordWrap: 'break-word', textAlign: 'left' }}>заявок за все время</div>
+              <div style={{ width: '100%', color: 'black', fontSize: 20, lineHeight: 1, fontFamily: "'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontWeight: '400', wordWrap: 'break-word', textAlign: 'left' }}>заявок за все время</div>
             </div>
           </LeftBlockPrimary>
           <LeftBlockSecondary>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', padding: '0 16px 0 24px', height: '100%', justifyContent: 'center', alignItems: 'flex-start' }}>
               <SKdT style={{ width: '100%', fontSize: 48, lineHeight: 1, wordWrap: 'break-word', textAlign: 'left' }}>131 969</SKdT>
-              <div style={{ width: '100%', color: 'black', fontSize: 20, lineHeight: 1, fontFamily: 'Golos Text', fontWeight: '400', wordWrap: 'break-word', textAlign: 'left' }}>обработанных заявок за все время</div>
+              <div style={{ width: '100%', color: 'black', fontSize: 20, lineHeight: 1, fontFamily: "'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontWeight: '400', wordWrap: 'break-word', textAlign: 'left' }}>обработанных заявок за все время</div>
             </div>
           </LeftBlockSecondary>
         </LeftStack>
