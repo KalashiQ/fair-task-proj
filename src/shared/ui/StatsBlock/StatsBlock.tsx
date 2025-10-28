@@ -1,18 +1,13 @@
+// Блок статистики: крупное значение и подпись
 import React from 'react';
 import styled from 'styled-components';
 
-/**
- * Интерфейс для пропсов StatsBlock компонента
- */
 interface StatsBlockProps {
   value: string;
   label: string;
   className?: string;
 }
 
-/**
- * Контейнер для блока статистики
- */
 const StatsContainer = styled.div`
   display: flex;
   flex-direction: column;

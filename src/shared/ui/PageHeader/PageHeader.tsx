@@ -1,17 +1,12 @@
+// Заголовок страницы с кнопкой экспорта
 import React from 'react';
 import styled from 'styled-components';
 
-/**
- * Интерфейс для пропсов PageHeader компонента
- */
 interface PageHeaderProps {
   title: string;
   className?: string;
 }
 
-/**
- * Контейнер для PageHeader
- */
 const PageHeaderContainer = styled.div`
   display: flex;
   align-items: center;
@@ -19,7 +14,7 @@ const PageHeaderContainer = styled.div`
   width: calc(100% - 64px); /* Вычитаем боковые отступы */
   height: 80px;
   padding: 0 20px;
-  margin: 0 32px;
+  margin: 16px 32px 0 32px; /* Отступ сверху, чтобы не слипалось с Header */
   background-color: #ffffff;
   box-sizing: border-box;
 `;

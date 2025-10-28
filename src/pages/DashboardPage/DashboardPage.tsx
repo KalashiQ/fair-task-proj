@@ -1,7 +1,8 @@
+// Страница Dashboard: шапка, заголовок, общая статистика, график и метрики
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Header, PageHeader, StatsBlock } from '@/shared/ui';
-import { ChartWidget } from '@/widgets/ChartWidget';
+import { ChartWidget, MetricsBlock } from '@/widgets';
 
 const DashboardContainer = styled.div`
   width: 100%;
@@ -21,12 +22,9 @@ const DashboardContent = styled.div`
   justify-content: center;
   padding: 20px;
   box-sizing: border-box;
+  will-change: transform;
 `;
 
-/**
- * Страница Dashboard
- * Отображает главную панель управления приложения
- */
 export const DashboardPage: React.FC = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'hour' | 'day' | 'week'>('hour');
 
@@ -50,6 +48,7 @@ export const DashboardPage: React.FC = () => {
       <StatsBlock value="8952" label={getLabelByPeriod(selectedPeriod)} />
       <ChartWidget onPeriodChange={setSelectedPeriod} />
       <DashboardContent>
+        <MetricsBlock kpiPercent={78} />
       </DashboardContent>
     </DashboardContainer>
   );

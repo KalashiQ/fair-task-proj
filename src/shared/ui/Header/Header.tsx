@@ -1,3 +1,4 @@
+// Заголовок приложения с логотипом и навигацией
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -6,16 +7,10 @@ import logoText from '@/assets/logo-text.svg';
 import chartsIcon from '@/assets/charts.svg';
 import settingsIcon from '@/assets/settings.svg';
 
-/**
- * Интерфейс для пропсов Header компонента
- */
 interface HeaderProps {
   className?: string;
 }
 
-/**
- * Стилизованный контейнер для Header
- */
 const HeaderContainer = styled.header`
   display: flex;
   align-items: center;
@@ -26,6 +21,9 @@ const HeaderContainer = styled.header`
   margin: 32px 32px 0 32px; /* Отступ сверху и по бокам */
   background-color: #ffffff;
   box-sizing: border-box;
+  position: sticky;
+  top: 32px; /* сохраняем верхний отступ в закреплённом состоянии */
+  z-index: 1000;
 `;
 
 /**

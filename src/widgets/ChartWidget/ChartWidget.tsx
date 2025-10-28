@@ -1,27 +1,39 @@
+// Виджет столбчатого графика заявок с табами периодов
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, Tooltip, Label } from 'recharts';
 import { PeriodTabs } from '@/shared/ui';
 
-/**
- * Интерфейс для точек данных графика
- */
 interface DataPoint {
   timeRange: string;
   value: number;
 }
 
-/**
- * Интерфейс для пропсов ChartWidget компонента
- */
 interface ChartWidgetProps {
   className?: string;
   onPeriodChange?: (period: 'hour' | 'day' | 'week') => void;
 }
 
-/**
- * Контейнер для графика
- */
+const XAxisUnitsLabel: React.FC<{ viewBox?: { x: number; y: number; width: number; height: number }; value?: string }> = (props) => {
+  const { viewBox, value } = props ?? {};
+  if (!viewBox) return null;
+  const { x = 0, y = 0, width = 0, height = 0 } = viewBox;
+  const labelX = x + width;
+  const labelY = y + height + 9;
+  return (
+    <text
+      x={labelX}
+      y={labelY}
+      textAnchor="end"
+      fill="#FF9500"
+      fontSize={20}
+      fontFamily="Golos Text, sans-serif"
+    >
+      {value}
+    </text>
+  );
+};
+
 const ChartContainer = styled.div`
   width: calc(100% - 64px);
   margin: 0 32px;
@@ -32,9 +44,6 @@ const ChartContainer = styled.div`
 
 
 
-/**
- * Функция для генерации данных на каждую минуту
- */
 const generateMinuteData = (): DataPoint[] => {
   const intervals = [
     { range: '0-15', targetValue: 5200 },
@@ -53,7 +62,6 @@ const generateMinuteData = (): DataPoint[] => {
     const avgValue = interval.targetValue / intervalSize;
     
     for (let minute = start; minute < end; minute++) {
-      // Добавляем случайное колебание ±20% от среднего значения
       const variation = (Math.random() - 0.5) * 0.4;
       const minuteValue = avgValue * (1 + variation);
       
@@ -67,9 +75,6 @@ const generateMinuteData = (): DataPoint[] => {
   return minuteData;
 };
 
-/**
- * Мок данные для разных периодов
- */
 const mockData = {
   hour: generateMinuteData(),
   day: [
@@ -91,21 +96,18 @@ const mockData = {
   ],
 };
 
-/**
- * Компонент графика заявок
- */
 export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodChange }) => {
   const [period, setPeriod] = useState<'hour' | 'day' | 'week'>('hour');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // Получаем данные и находим максимальное значение
   const chartData = useMemo(() => {
     const data = mockData[period];
-    const maxValue = Math.max(...data.map(d => d.value));
+    const dataMax = Math.max(...data.map(d => d.value));
     
     return {
       data,
-      maxValue: Math.ceil(maxValue * 1.1), // Добавляем 10% для визуального зазора
+      maxValue: Math.ceil(dataMax * 1.1),
+      dataMax,
     };
   }, [period]);
 
@@ -114,10 +116,7 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
     onPeriodChange?.(newPeriod);
   };
 
-  // Цвета для столбцов: оранжевый при hover, серый по умолчанию
-  const getBarColor = (index: number) => {
-    return hoveredIndex === index ? '#FF9500' : '#E0E0E0';
-  };
+  const getBarColor = (index: number) => (hoveredIndex === index ? '#FF9500' : '#E0E0E0');
 
   return (
     <ChartContainer className={className}>
@@ -126,7 +125,7 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
           data={chartData.data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+          margin={{ top: 56, right: 30, left: 20, bottom: 104 }}
           barSize={period === 'hour' ? 8 : 40}
           barGap={period === 'hour' ? 1 : 4}
         >
@@ -146,7 +145,11 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
               }
               return value;
             }}
-          />
+          >
+            <Label
+              content={<XAxisUnitsLabel value={period === 'hour' ? 'минуты' : period === 'day' ? 'часы' : 'дни'} />}
+            />
+          </XAxis>
           <YAxis
             domain={[0, chartData.maxValue]}
             tick={{ fill: '#C8C8C8', fontSize: 20, fontFamily: 'Golos Text, sans-serif', fontWeight: 400 }}
@@ -154,11 +157,28 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
             allowDecimals={false}
             axisLine={false}
             tickLine={false}
-          />
+          >
+            <Label
+              value="заявки"
+              position="top"
+              offset={38}
+              angle={0}
+              fill="#FF9500"
+              fontSize={20}
+              fontFamily="Golos Text, sans-serif"
+            />
+          </YAxis>
           <Tooltip
             cursor={{ fill: 'transparent' }}
             content={({ active, payload }) => {
               if (active && payload && payload[0]) {
+                const originalValue = payload[0].payload?.timeRange as string | undefined;
+                let minuteLabel: string | null = null;
+                if (period === 'hour' && originalValue != null) {
+                  const parsed = Number.parseInt(originalValue, 10);
+                  const displayedMinute = Number.isNaN(parsed) ? originalValue : String(parsed + 1);
+                  minuteLabel = `минута ${displayedMinute}`;
+                }
                 return (
                   <div style={{
                     backgroundColor: '#ffffff',
@@ -169,6 +189,11 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
                     fontSize: '16px',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                   }}>
+                    {minuteLabel && (
+                      <div style={{ color: '#666666', marginBottom: '6px' }}>
+                        {minuteLabel}
+                      </div>
+                    )}
                     <span style={{ color: '#00B4DD' }}>
                       {payload[0].value?.toLocaleString()}
                     </span>
