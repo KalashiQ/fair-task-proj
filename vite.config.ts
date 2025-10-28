@@ -16,4 +16,13 @@ export default defineConfig({
       '@/shared': path.resolve(__dirname, './src/shared'),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://100.88.60.130:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 });

@@ -25,10 +25,10 @@ const TabsContainer = styled.div`
 /**
  * Таб периода
  */
-const PeriodTab = styled.button<{ isActive: boolean }>`
+const PeriodTab = styled.button<{ $isActive: boolean }>`
   background: transparent;
   border: none;
-  color: ${props => props.isActive ? '#00B4DD' : '#C8C8C8'};
+  color: ${props => props.$isActive ? '#00B4DD' : '#C8C8C8'};
   font-size: 20px;
   font-family: 'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 400;
@@ -50,7 +50,7 @@ const PeriodTab = styled.button<{ isActive: boolean }>`
     left: 0;
     right: 0;
     height: 2px;
-    background-color: ${props => props.isActive ? '#00B4DD' : 'transparent'};
+    background-color: ${props => props.$isActive ? '#00B4DD' : 'transparent'};
     transition: background-color 0.2s ease;
   }
 `;
@@ -70,7 +70,7 @@ export const PeriodTabs: React.FC<PeriodTabsProps> = ({ activePeriod, onPeriodCh
       {periods.map((period) => (
         <PeriodTab
           key={period.value}
-          isActive={activePeriod === period.value}
+          $isActive={activePeriod === period.value}
           onClick={() => onPeriodChange(period.value)}
           type="button"
         >

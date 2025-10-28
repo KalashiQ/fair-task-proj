@@ -13,7 +13,7 @@ const SettingsContainer = styled.div`
   display: flex;
   flex-direction: column;
   margin: 0;
-  padding: 0;
+  padding: 124px 0 0 0; /* компенсируем фиксированный Header (124px) */
   box-sizing: border-box;
 `;
 

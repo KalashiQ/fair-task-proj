@@ -16,12 +16,12 @@ const HeaderContainer = styled.header`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 60px; /* сохраняем минимальную высоту шапки */
+  height: 124px; /* фиксированная высота: 60 + 32 + 32 для стабильности */
   padding: 32px 32px; /* одинаковый паддинг сверху и снизу, без просветов */
   background-color: #ffffff;
   box-sizing: border-box;
-  position: sticky;
-  top: 0; /* липкий хедер прижат к верху, отступ реализован паддингом */
+  position: fixed; /* фиксируем хедер для исключения скачков */
+  top: 0;
   z-index: 1000;
 `;
 
@@ -99,16 +99,7 @@ const ButtonIcon = styled.img`
   pointer-events: none; /* Делаем иконку не кликабельной */
 `;
 
-/**
- * Стилизованная кнопка-заглушка
- */
-const PlaceholderButton = styled.div`
-  width: 40px;
-  height: 40px;
-  background-color: #BABABA;
-  border-radius: 5px;
-  cursor: not-allowed;
-`;
+ 
 
 
 /**
@@ -168,9 +159,7 @@ export const Header: React.FC<HeaderProps> = ({ className }) => {
         >
           <ButtonIcon src={chartsIcon} alt="Charts" />
         </WorkingButton>
-        <PlaceholderButton aria-label="Placeholder button 1" />
-        <PlaceholderButton aria-label="Placeholder button 2" />
-        <PlaceholderButton aria-label="Placeholder button 3" />
+        
       </CenterSection>
 
       {/* Правая часть - логотип */}
