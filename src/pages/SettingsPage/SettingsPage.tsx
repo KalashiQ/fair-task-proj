@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Header, PageHeader } from '@/shared/ui';
+import { fetchParameters, createParameter, deleteParameter, type Parameter, type CreateParameterRequest } from '@/shared/api/metrics';
 import plusIcon from '@/assets/plus.svg';
 import minusIcon from '@/assets/minus.svg';
 import arrightIcon from '@/assets/arright.svg';
@@ -261,12 +262,6 @@ const PageInput = styled.input`
 
 type ParameterType = 'int' | 'datetime' | 'float' | 'text' | 'bool';
 
-interface ParameterRow {
-  id: number;
-  name: string;
-  type: ParameterType;
-}
-
 /**
  * Страница настроек
  * Заглушечная страница для настроек приложения
@@ -274,15 +269,9 @@ interface ParameterRow {
 export const SettingsPage: React.FC = () => {
   const [parameterNameInput, setParameterNameInput] = useState<string>('');
   const [parameterTypeInput, setParameterTypeInput] = useState<'' | ParameterType>('');
-  const [parameters, setParameters] = useState<ParameterRow[]>(() => {
-    const types: ParameterType[] = ['int', 'datetime', 'float', 'text', 'bool'];
-    const list: ParameterRow[] = Array.from({ length: 60 }, (_, idx) => ({
-      id: idx + 1,
-      name: `Параметр ${idx + 1}`,
-      type: types[idx % types.length] as ParameterType,
-    }));
-    return list;
-  });
+  const [parameters, setParameters] = useState<Parameter[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const PAGE_SIZE = 10;
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortById, setSortById] = useState<boolean>(false);
@@ -296,6 +285,25 @@ export const SettingsPage: React.FC = () => {
   }, [parameters]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(parameters.length / PAGE_SIZE)), [parameters]);
+
+  // Загрузка параметров с сервера
+  useEffect(() => {
+    const loadParameters = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedParameters = await fetchParameters();
+        setParameters(fetchedParameters);
+      } catch (err) {
+        console.error('SettingsPage: Failed to load parameters:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load parameters');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadParameters();
+  }, []);
 
   useEffect(() => {
     // Clamp current page when total pages shrink due to deletions
@@ -320,7 +328,7 @@ export const SettingsPage: React.FC = () => {
     setCurrentPage(p);
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const num = Number(pageInput);
       if (Number.isFinite(num) && num >= 1) {
@@ -342,29 +350,105 @@ export const SettingsPage: React.FC = () => {
     return items;
   }, [totalPages]);
 
-  const handleAddParameter = () => {
+  const handleAddParameter = async () => {
     const trimmed = parameterNameInput.trim();
-    if (!trimmed || parameterTypeInput === '') return;
-    const newRow: ParameterRow = {
-      id: nextId,
-      name: trimmed,
-      type: parameterTypeInput,
-    };
-    setParameters(prev => [...prev, newRow]);
-    setParameterNameInput('');
-    setParameterTypeInput('');
-    // Optionally jump to last page to see the newly added row
-    const newTotalPages = Math.max(1, Math.ceil((parameters.length + 1) / PAGE_SIZE));
-    setCurrentPage(newTotalPages);
+    
+    if (!trimmed || parameterTypeInput === '') {
+      alert('Пожалуйста, заполните имя параметра и выберите тип');
+      return;
+    }
+    
+    try {
+      const request: CreateParameterRequest = {
+        name: trimmed,
+        type: parameterTypeInput,
+      };
+      
+      const response = await createParameter(request, parameters);
+      console.log('Parameter created with ID:', response.id);
+      
+      const newParameter: Parameter = {
+        id: response.id,
+        name: trimmed,
+        type: parameterTypeInput,
+      };
+      
+      setParameters(prev => [...prev, newParameter]);
+      setParameterNameInput('');
+      setParameterTypeInput('');
+      
+      // Optionally jump to last page to see the newly added row
+      const newTotalPages = Math.max(1, Math.ceil((parameters.length + 1) / PAGE_SIZE));
+      setCurrentPage(newTotalPages);
+    } catch (err) {
+      console.error('Failed to create parameter:', err);
+      alert(`Ошибка при создании параметра: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
+    }
   };
 
-  const handleRemoveParameter = (id: number) => {
+  const handleRemoveParameter = async (id: number) => {
     const target = parameters.find((p) => p.id === id);
     const nameLabel = target ? `${target.name} (${target.type})` : String(id);
     const ok = window.confirm(`Точно удалить параметр ${nameLabel}?`);
     if (!ok) return;
+
+    // Сразу удаляем из UI для мгновенного отклика
     setParameters(prev => prev.filter(p => p.id !== id));
+
+    try {
+      await deleteParameter(id, parameters);
+      console.log('Parameter deleted:', id);
+    } catch (err) {
+      console.error('Failed to delete parameter:', err);
+      // Если ошибка, возвращаем параметр обратно
+      setParameters(prev => [...prev, target!]);
+      alert(`Ошибка при удалении параметра: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
+    }
   };
+
+  if (loading) {
+    return (
+      <SettingsContainer>
+        <Header />
+        <PageHeader title="Настройка параметров" />
+        <SettingsContent>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '200px',
+            fontSize: '18px',
+            color: '#666666'
+          }}>
+            Загрузка параметров...
+          </div>
+        </SettingsContent>
+      </SettingsContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <SettingsContainer>
+        <Header />
+        <PageHeader title="Настройка параметров" />
+        <SettingsContent>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '200px',
+            fontSize: '18px',
+            color: '#ff4444',
+            textAlign: 'center',
+            padding: '20px'
+          }}>
+            Ошибка загрузки: {error}
+          </div>
+        </SettingsContent>
+      </SettingsContainer>
+    );
+  }
 
   return (
     <SettingsContainer>
@@ -388,6 +472,11 @@ export const SettingsPage: React.FC = () => {
                 placeholder="Введите имя параметра"
                 value={parameterNameInput}
                 onChange={(e) => setParameterNameInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddParameter();
+                  }
+                }}
                 aria-label="Имя параметра"
               />
             </FieldBox>
@@ -446,7 +535,7 @@ export const SettingsPage: React.FC = () => {
                   placeholder={String(currentPage)}
                   value={pageInput}
                   onChange={(e) => setPageInput(e.target.value.replace(/[^0-9]/g, ''))}
-                  onKeyDown={handleInputKeyDown}
+                  onKeyDown={handlePageInputKeyDown}
                   aria-label="Перейти на страницу"
                 />
               </PageInputBox>

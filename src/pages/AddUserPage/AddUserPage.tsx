@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
 import { Header, PageHeader } from '@/shared/ui';
-import { fetchExecutors, createExecutor, type CreateExecutorRequest } from '@/shared/api/metrics';
+import { fetchExecutors, createExecutor, fetchParameters, type CreateExecutorRequest, type Parameter } from '@/shared/api/metrics';
 import plusIcon from '@/assets/plus.svg';
 import minusIcon from '@/assets/minus.svg';
 import arrightIcon from '@/assets/arright.svg';
@@ -544,12 +544,6 @@ const LogicalOpSelect = styled.select`
 type UserStatus = 'active' | 'inactive';
 type LogicalOperation = '>' | '<' | '=' | '<x<';
 
-interface Parameter {
-  id: number;
-  name: string;
-  type: string;
-}
-
 interface UserRow {
   id: number;
   name: string;
@@ -568,15 +562,10 @@ interface UserRow {
  * Таблица для управления пользователями с параметрами и масками
  */
 export const AddUserPage: React.FC = () => {
-  // Mock parameters from SettingsPage
-  const [availableParameters] = useState<Parameter[]>(() => {
-    const types = ['int', 'datetime', 'float', 'text', 'bool'];
-    return Array.from({ length: 60 }, (_, idx) => ({
-      id: idx + 1,
-      name: `Параметр ${idx + 1}`,
-      type: types[idx % types.length]!,
-    }));
-  });
+  // Параметры загружаются с сервера
+  const [availableParameters, setAvailableParameters] = useState<Parameter[]>([]);
+  const [parametersLoading, setParametersLoading] = useState<boolean>(true);
+  const [parametersError, setParametersError] = useState<string | null>(null);
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -616,6 +605,25 @@ export const AddUserPage: React.FC = () => {
     const maxId = users.reduce((max, u) => (u.id > max ? u.id : max), 0);
     return maxId + 1;
   }, [users]);
+
+  // Загрузка параметров с сервера
+  useEffect(() => {
+    const loadParameters = async () => {
+      try {
+        setParametersLoading(true);
+        setParametersError(null);
+        const fetchedParameters = await fetchParameters();
+        setAvailableParameters(fetchedParameters);
+      } catch (err) {
+        console.error('Failed to load parameters:', err);
+        setParametersError(err instanceof Error ? err.message : 'Failed to load parameters');
+      } finally {
+        setParametersLoading(false);
+      }
+    };
+
+    loadParameters();
+  }, []);
 
   // Загрузка данных исполнителей
   useEffect(() => {
@@ -853,7 +861,7 @@ export const AddUserPage: React.FC = () => {
     return availableParameters.find(p => p.id === id)?.name || `Параметр ${id}`;
   };
 
-  if (loading) {
+  if (loading || parametersLoading) {
     return (
       <AddUserContainer>
         <Header />
@@ -867,14 +875,14 @@ export const AddUserPage: React.FC = () => {
             fontSize: '18px',
             color: '#666666'
           }}>
-            Загрузка исполнителей...
+            {loading ? 'Загрузка исполнителей...' : 'Загрузка параметров...'}
           </div>
         </AddUserContent>
       </AddUserContainer>
     );
   }
 
-  if (error) {
+  if (error || parametersError) {
     return (
       <AddUserContainer>
         <Header />
@@ -890,7 +898,7 @@ export const AddUserPage: React.FC = () => {
             textAlign: 'center',
             padding: '20px'
           }}>
-            Ошибка загрузки: {error}
+            Ошибка загрузки: {error || parametersError}
           </div>
         </AddUserContent>
       </AddUserContainer>
