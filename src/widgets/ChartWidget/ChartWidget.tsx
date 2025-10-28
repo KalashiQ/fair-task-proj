@@ -1,5 +1,5 @@
 // Виджет столбчатого графика заявок с табами периодов
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, Tooltip, Label } from 'recharts';
 import { PeriodTabs } from '@/shared/ui';
@@ -111,12 +111,61 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
     };
   }, [period]);
 
-  const handlePeriodChange = (newPeriod: 'hour' | 'day' | 'week') => {
+  const handlePeriodChange = useCallback((newPeriod: 'hour' | 'day' | 'week') => {
     setPeriod(newPeriod);
     onPeriodChange?.(newPeriod);
-  };
+  }, [onPeriodChange]);
 
-  const getBarColor = (index: number) => (hoveredIndex === index ? '#FF9500' : '#E0E0E0');
+  const getBarColor = useCallback((index: number) => (hoveredIndex === index ? '#FF9500' : '#E0E0E0'), [hoveredIndex]);
+
+  const handleMouseEnterBar = useCallback((_entry: unknown, index: number) => {
+    setHoveredIndex((prev) => (prev === index ? prev : index));
+  }, []);
+
+  const handleMouseLeaveBar = useCallback(() => {
+    setHoveredIndex((prev) => (prev === null ? prev : null));
+  }, []);
+
+  interface TooltipPayloadItem {
+    payload?: { timeRange?: string };
+    value?: number;
+  }
+
+  const renderTooltip = useCallback(({ active, payload }: { active?: boolean; payload?: TooltipPayloadItem[] }) => {
+    if (active && payload && payload[0]) {
+      const originalValue = payload[0].payload?.timeRange as string | undefined;
+      let minuteLabel: string | null = null;
+      if (period === 'hour' && originalValue != null) {
+        const parsed = Number.parseInt(originalValue, 10);
+        const displayedMinute = Number.isNaN(parsed) ? originalValue : String(parsed + 1);
+        minuteLabel = `минута ${displayedMinute}`;
+      }
+      return (
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #C8C8C8',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          fontFamily: 'Golos Text, sans-serif',
+          fontSize: '16px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}>
+          {minuteLabel && (
+            <div style={{ color: '#666666', marginBottom: '6px' }}>
+              {minuteLabel}
+            </div>
+          )}
+          <span style={{ color: '#00B4DD' }}>
+            {payload[0].value?.toLocaleString()}
+          </span>
+          <span style={{ color: '#666666', marginLeft: '8px' }}>
+            заявок
+          </span>
+        </div>
+      );
+    }
+    return null;
+  }, [period]);
 
   return (
     <ChartContainer className={className}>
@@ -170,46 +219,17 @@ export const ChartWidget: React.FC<ChartWidgetProps> = ({ className, onPeriodCha
           </YAxis>
           <Tooltip
             cursor={{ fill: 'transparent' }}
-            content={({ active, payload }) => {
-              if (active && payload && payload[0]) {
-                const originalValue = payload[0].payload?.timeRange as string | undefined;
-                let minuteLabel: string | null = null;
-                if (period === 'hour' && originalValue != null) {
-                  const parsed = Number.parseInt(originalValue, 10);
-                  const displayedMinute = Number.isNaN(parsed) ? originalValue : String(parsed + 1);
-                  minuteLabel = `минута ${displayedMinute}`;
-                }
-                return (
-                  <div style={{
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #C8C8C8',
-                    borderRadius: '8px',
-                    padding: '12px 16px',
-                    fontFamily: 'Golos Text, sans-serif',
-                    fontSize: '16px',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    {minuteLabel && (
-                      <div style={{ color: '#666666', marginBottom: '6px' }}>
-                        {minuteLabel}
-                      </div>
-                    )}
-                    <span style={{ color: '#00B4DD' }}>
-                      {payload[0].value?.toLocaleString()}
-                    </span>
-                    <span style={{ color: '#666666', marginLeft: '8px' }}>
-                      заявок
-                    </span>
-                  </div>
-                );
-              }
-              return null;
-            }}
+            content={renderTooltip}
+            isAnimationActive={false}
+            offset={12}
+            allowEscapeViewBox={{ x: true, y: true }}
+            wrapperStyle={{ pointerEvents: 'none' }}
           />
           <Bar 
             dataKey="value"
-            onMouseEnter={(_, index) => setHoveredIndex(index)}
-            onMouseLeave={() => setHoveredIndex(null)}
+            isAnimationActive={false}
+            onMouseEnter={handleMouseEnterBar}
+            onMouseLeave={handleMouseLeaveBar}
           >
             {chartData.data.map((_entry, index) => (
               <Cell key={`cell-${index}`} fill={getBarColor(index)} />

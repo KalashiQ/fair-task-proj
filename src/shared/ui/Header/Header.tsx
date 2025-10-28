@@ -15,14 +15,13 @@ const HeaderContainer = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: calc(100% - 64px); /* Вычитаем боковые отступы */
-  height: 60px;
-  padding: 0 20px;
-  margin: 32px 32px 0 32px; /* Отступ сверху и по бокам */
+  width: 100%;
+  min-height: 60px; /* сохраняем минимальную высоту шапки */
+  padding: 32px 32px; /* одинаковый паддинг сверху и снизу, без просветов */
   background-color: #ffffff;
   box-sizing: border-box;
   position: sticky;
-  top: 32px; /* сохраняем верхний отступ в закреплённом состоянии */
+  top: 0; /* липкий хедер прижат к верху, отступ реализован паддингом */
   z-index: 1000;
 `;
 
