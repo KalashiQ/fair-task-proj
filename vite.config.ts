@@ -23,6 +23,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/executors-api': {
+        target: 'http://91.109.146.20:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/executors-api/, ''),
+      },
     },
   },
 });

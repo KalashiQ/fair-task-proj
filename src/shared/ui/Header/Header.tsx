@@ -6,6 +6,7 @@ import logoImage from '@/assets/logo.svg';
 import logoText from '@/assets/logo-text.svg';
 import chartsIcon from '@/assets/charts.svg';
 import settingsIcon from '@/assets/settings.svg';
+import userIcon from '@/assets/user.svg';
 
 interface HeaderProps {
   className?: string;
@@ -127,8 +128,13 @@ export const Header: React.FC<HeaderProps> = ({ className }) => {
     navigate('/dashboard');
   };
 
+  const handleAddUserClick = () => {
+    navigate('/adduser');
+  };
+
   const isSettingsActive = location.pathname === '/settings';
   const isDashboardActive = location.pathname === '/dashboard';
+  const isAddUserActive = location.pathname === '/adduser';
 
   return (
     <HeaderContainer className={className}>
@@ -158,6 +164,16 @@ export const Header: React.FC<HeaderProps> = ({ className }) => {
           }}
         >
           <ButtonIcon src={chartsIcon} alt="Charts" />
+        </WorkingButton>
+        <WorkingButton 
+          onClick={handleAddUserClick}
+          aria-label="Add User"
+          style={{ 
+            borderColor: isAddUserActive ? '#00B4DD' : '#C8C8C8',
+            backgroundColor: isAddUserActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
+          }}
+        >
+          <ButtonIcon src={userIcon} alt="Add User" />
         </WorkingButton>
         
       </CenterSection>

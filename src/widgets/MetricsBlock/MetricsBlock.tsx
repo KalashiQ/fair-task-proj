@@ -1,7 +1,8 @@
 // Виджет метрик: слева KPI в %, справа мини-график заявок по исполнителям
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
+import { fetchExecutors } from '@/shared';
 
 interface MetricsBlockProps {
   className?: string;
@@ -101,6 +102,13 @@ const AxisSwatch = styled.span`
   border-top: 2px dashed #C8C8C8;
 `;
 
+const MedianSwatch = styled.span`
+  display: inline-block;
+  width: 24px;
+  height: 0;
+  border-top: 2px dashed #00B4DD;
+`;
+
 const LegendNote = styled.div`
   display: flex;
   align-items: center;
@@ -173,86 +181,31 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
     payload?: Array<{ payload?: { performers?: string; requests?: number } }>;
   }
 
-  
+  const [chartData, setChartData] = useState<Array<{ performers: string; requests: number }>>([]);
 
-  //
-  const chartData = useMemo(() => {
-    // Ровная линия с общим количеством 4000 заявок на 60 исполнителей и наглядным взлетом в конце
-    const numPerformers = 80;
-    const totalRequests = 4000;
-
-    const base = Math.floor(totalRequests / numPerformers);
-    let remainder = totalRequests - base * numPerformers;
-
-    const data = Array.from({ length: numPerformers }, (_, idx) => ({
-      performers: String(idx + 1),
-      requests: base,
-    }));
-    for (let idx = 0; idx < numPerformers && remainder > 0; idx += 1) {
-      const point = data[idx];
-      if (point) point.requests += 1;
-      remainder -= 1;
-    }
-
-    // Сохраняем исходные значения для последних двух
-    const preLastIndex = numPerformers - 2;
-    const lastIndex = numPerformers - 1;
-    const preLastOriginal = data[preLastIndex]?.requests ?? 0;
-    const lastOriginal = data[lastIndex]?.requests ?? 0;
-
-    // Применяем рост: +20% предпоследний, +70% последний
-    const preLastBoosted = Math.max(0, Math.round(preLastOriginal * 1.2));
-    const lastBoosted = Math.max(0, Math.round(lastOriginal * 1.7));
-
-    const prePoint = data[preLastIndex];
-    if (prePoint) {
-      prePoint.requests = preLastBoosted;
-    }
-    if (data[lastIndex]) data[lastIndex].requests = lastBoosted;
-
-    // Компенсируем общий прирост одним проходом без длинных циклов
-    let delta = (preLastBoosted - preLastOriginal) + (lastBoosted - lastOriginal);
-    if (delta > 0) {
-      const donors: number[] = [];
-      for (let idx = 0; idx < numPerformers; idx += 1) {
-        if (idx !== preLastIndex && idx !== lastIndex) donors.push(idx);
-      }
-      const donorsCount = donors.length;
-      const baseCut = Math.floor(delta / donorsCount);
-      let cutRemainder = delta % donorsCount;
-      for (const idx of donors) {
-        const point = data[idx];
-        if (!point) continue;
-        const cut = baseCut + (cutRemainder > 0 ? 1 : 0);
-        if (cutRemainder > 0) cutRemainder -= 1;
-        const applied = Math.min(point.requests, cut);
-        point.requests -= applied;
-        delta -= applied;
+  useEffect(() => {
+    let aborted = false;
+    const controller = new AbortController();
+    async function load() {
+      
+      try {
+        const executors = await fetchExecutors({ signal: controller.signal });
+        if (aborted) return;
+        const data = executors.map((executor, idx) => ({ 
+          performers: String(idx + 1), 
+          requests: Math.max(0, Math.floor(Number(executor.order_count))) 
+        }));
+        setChartData(data);
+      } catch {
+        if (aborted) return;
+        setChartData([]);
       }
     }
-
-    // На всякий случай корректируем сумму на +-1 из-за округлений
-    const currentSum = data.reduce((acc, d) => acc + d.requests, 0);
-    let diff = currentSum - totalRequests;
-    if (diff !== 0) {
-      if (diff > 0) {
-        // урезаем из начала
-        for (let idx = 0; idx < numPerformers && diff > 0; idx += 1) {
-          if ((data[idx]?.requests ?? 0) > 0) {
-            data[idx]!.requests -= 1;
-            diff -= 1;
-          }
-        }
-      } else {
-        // добавляем к началу
-        for (let idx = 0; idx < numPerformers && diff < 0; idx += 1) {
-          data[idx]!.requests += 1;
-          diff += 1;
-        }
-      }
-    }
-
-    return data;
+    load();
+    return () => {
+      aborted = true;
+      controller.abort();
+    };
   }, []);
 
   const dataLength = chartData.length;
@@ -268,18 +221,25 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
       return Math.ceil(m * 1.1);
     }, [chartData]);
 
-  const averagePerformerRequests = useMemo(() => {
+  const medianPerformerRequests = useMemo(() => {
     if (chartData.length === 0) return 0;
-    let sum = 0;
-    for (let i = 0; i < chartData.length; i += 1) {
-      sum += chartData[i]!.requests;
+    const sortedRequests = chartData.map(d => d.requests).sort((a, b) => a - b);
+    const mid = Math.floor(sortedRequests.length / 2);
+    if (sortedRequests.length % 2 === 0) {
+      const mid1 = sortedRequests[mid - 1];
+      const mid2 = sortedRequests[mid];
+      if (mid1 !== undefined && mid2 !== undefined) {
+        return (mid1 + mid2) / 2;
+      }
+      return 0;
     }
-    return sum / chartData.length;
+    const medianValue = sortedRequests[mid];
+    return medianValue !== undefined ? medianValue : 0;
   }, [chartData]);
 
   const renderLegend = useCallback(() => {
     const lastPoint = chartData[chartData.length - 1];
-    const deviationPct = averagePerformerRequests > 0 && lastPoint ? ((lastPoint.requests - averagePerformerRequests) / averagePerformerRequests) * 100 : 0;
+    const deviationPct = medianPerformerRequests > 0 && lastPoint ? ((lastPoint.requests - medianPerformerRequests) / medianPerformerRequests) * 100 : 0;
     const deviationText = `${deviationPct >= 0 ? '+' : ''}${Math.round(deviationPct)}%`;
 
     return (
@@ -293,22 +253,30 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
             <AxisSwatch />
             <span>исполнители</span>
           </LegendItem>
+          <LegendItem>
+            <MedianSwatch />
+            <span>медиана</span>
+          </LegendItem>
         </LegendRow>
         <LegendNote>
-          <LegendNoteLabel>отклонение (последний):</LegendNoteLabel>
+          <LegendNoteLabel>медиана:</LegendNoteLabel>
+          <LegendNoteValue>{Math.round(medianPerformerRequests).toLocaleString()}</LegendNoteValue>
+        </LegendNote>
+        <LegendNote>
+          <LegendNoteLabel>отклонение от медианы (последний):</LegendNoteLabel>
           <LegendNoteValue>{deviationText}</LegendNoteValue>
         </LegendNote>
       </LegendContainer>
     );
-  }, [chartData, averagePerformerRequests]);
+  }, [chartData, medianPerformerRequests]);
 
   const renderTooltip = useCallback((props: TooltipProps) => {
     const { active, payload } = props;
     if (!active || !payload || payload.length === 0) return null;
     const point = payload[0]?.payload;
     if (!point) return null;
-    const avg = averagePerformerRequests;
-    const deviationPct = avg > 0 ? ((point.requests ?? 0) - avg) / avg * 100 : 0;
+    const median = medianPerformerRequests;
+    const deviationPct = median > 0 ? ((point.requests ?? 0) - median) / median * 100 : 0;
     const hasDeviation = Number.isFinite(deviationPct) && Math.abs(deviationPct) >= 0.5;
     const deviationText = `${deviationPct >= 0 ? '+' : ''}${Math.round(deviationPct)}%`;
     return (
@@ -321,15 +289,19 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
           <TooltipLabel>заявок:</TooltipLabel>
           <TooltipValue>{typeof point.requests === 'number' ? point.requests.toLocaleString() : String(point.requests)}</TooltipValue>
         </TooltipRow>
+        <TooltipRow>
+          <TooltipLabel>медиана:</TooltipLabel>
+          <TooltipValue>{Math.round(median).toLocaleString()}</TooltipValue>
+        </TooltipRow>
         {hasDeviation && (
           <TooltipRow>
-            <TooltipLabel>отклонение:</TooltipLabel>
+            <TooltipLabel>отклонение от медианы:</TooltipLabel>
             <TooltipValue>{deviationText}</TooltipValue>
           </TooltipRow>
         )}
       </TooltipContainer>
     );
-  }, [averagePerformerRequests]);
+  }, [medianPerformerRequests]);
 
   return (
     <Container className={className}>
@@ -380,6 +352,12 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
               offset={12}
               allowEscapeViewBox={{ x: false, y: true }}
               wrapperStyle={{ pointerEvents: 'none' }}
+            />
+            <ReferenceLine
+              y={medianPerformerRequests}
+              stroke="#00B4DD"
+              strokeWidth={2}
+              strokeDasharray="5 5"
             />
             <Line
               type="monotone"

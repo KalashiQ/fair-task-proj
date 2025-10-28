@@ -87,7 +87,7 @@ export const DashboardPage: React.FC = () => {
       <StatsBlock value={formattedValue} label={getLabelByPeriod(selectedPeriod)} />
       <ChartWidget onPeriodChange={setSelectedPeriod} />
       <DashboardContent>
-        <MetricsBlock kpiPercent={78} />
+        <MetricsBlock/>
       </DashboardContent>
     </DashboardContainer>
   );
