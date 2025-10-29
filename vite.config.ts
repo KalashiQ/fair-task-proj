@@ -19,12 +19,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://91.109.146.20:8080',
+        target: 'http://100.88.60.130:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/executors-api': {
-        target: 'http://91.109.146.20:8080',
+        target: 'http://100.88.60.130:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/executors-api/, ''),
       },

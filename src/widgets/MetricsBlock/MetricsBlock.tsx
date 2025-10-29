@@ -2,7 +2,7 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
-import { fetchExecutors, fetchTotalOrderCount, fetchCompleteOrderCount } from '@/shared';
+import { fetchExecutorOrders, fetchTotalOrderCount, fetchCompleteOrderCount } from '@/shared';
 
 interface MetricsBlockProps {
   className?: string;
@@ -198,20 +198,20 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
       
       try {
         // Загружаем все данные параллельно
-        const [executors, totalOrdersData, completeOrdersData] = await Promise.all([
-          fetchExecutors({ signal: controller.signal }),
+        const [executorOrders, totalOrdersData, completeOrdersData] = await Promise.all([
+          fetchExecutorOrders({ signal: controller.signal }),
           fetchTotalOrderCount(),
           fetchCompleteOrderCount()
         ]);
         
         if (aborted) return;
         
-        console.log('All data loaded:', { executors, totalOrdersData, completeOrdersData });
+        console.log('All data loaded:', { executorOrders, totalOrdersData, completeOrdersData });
         
-        // Обрабатываем данные исполнителей
-        const data = executors.map((executor, idx) => ({ 
-          performers: String(idx + 1), 
-          requests: Math.max(0, Math.floor(Number(executor.order_count))) 
+        // Обрабатываем данные заявок по исполнителям
+        const data = executorOrders.map((item, idx) => ({ 
+          performers: item.name ? item.name : String(item.id ?? idx + 1), 
+          requests: item.requests 
         }));
         
         setChartData(data);

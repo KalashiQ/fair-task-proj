@@ -55,6 +55,17 @@ export interface CompleteOrderCountResponse {
   count: number;
 }
 
+export interface ExecutorOrdersItem {
+  id?: number;
+  name?: string;
+  executor_id?: number;
+  executor_name?: string;
+  orders?: number;
+  count?: number;
+}
+
+export type ExecutorOrdersResponse = ExecutorOrdersItem[];
+
 // Для dev окружения используем прокси /api в Vite, чтобы обойти CORS
 const BASE_URL = '/api';
 const EXECUTORS_BASE_URL = '/executors-api';
@@ -77,11 +88,23 @@ export async function fetchOrderCount(
   console.log('Full request URL:', url);
   console.log('==========================');
   
-  const resp = await fetch(url, {
+  let resp = await fetch(url, {
     method: 'GET',
     headers: { Accept: 'application/json' },
     signal: options?.signal ?? null,
   });
+
+  // Fallback: если эндпоинт не найден, пробуем альтернативный путь
+  if (resp.status === 404) {
+    const altUrl = `${BASE_URL}/metric/order_count?limit=${encodeURIComponent(period)}`;
+    console.warn(`[metrics] order_count_limit 404, trying fallback: ${altUrl}`);
+    resp = await fetch(altUrl, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: options?.signal ?? null,
+    });
+  }
+
   if (!resp.ok) {
     throw new Error(`Failed to fetch order_count (${resp.status})`);
   }
@@ -453,6 +476,44 @@ export async function fetchCompleteOrderCount(): Promise<CompleteOrderCountRespo
   }
   
   return json as CompleteOrderCountResponse;
+}
+
+// Метрики: заявки по исполнителям
+export async function fetchExecutorOrders(options?: { signal?: AbortSignal | null }): Promise<Array<{ id?: number; name?: string; requests: number }>> {
+  const url = `${BASE_URL}/metric/executor_orders`;
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    signal: options?.signal ?? null,
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch executor orders (${resp.status})`);
+  }
+  const json = await resp.json();
+  console.debug('[metrics] /metric/executor_orders raw:', json);
+
+  const normalize = (arr: unknown): Array<{ id?: number; name?: string; requests: number }> => {
+    if (!Array.isArray(arr)) return [];
+    const out: Array<{ id?: number; name?: string; requests: number }> = [];
+    for (const item of arr) {
+      if (typeof item === 'number') {
+        out.push({ id: out.length + 1, requests: Math.max(0, Math.floor(item)) });
+      } else if (item && typeof item === 'object') {
+        const o = item as Record<string, unknown>;
+        const id = typeof o['id'] === 'number' ? (o['id'] as number) : (typeof o['executor_id'] === 'number' ? (o['executor_id'] as number) : undefined);
+        const name = typeof o['name'] === 'string' ? (o['name'] as string) : (typeof o['executor_name'] === 'string' ? (o['executor_name'] as string) : undefined);
+        const countRaw = typeof o['orders'] === 'number' ? (o['orders'] as number) : (typeof o['count'] === 'number' ? (o['count'] as number) : Number(o['count']));
+        const requests = Number.isFinite(countRaw) ? Number(countRaw) : 0;
+        const result: { id?: number; name?: string; requests: number } = { requests: Math.max(0, Math.floor(requests)) };
+        if (typeof id === 'number') result.id = id;
+        if (typeof name === 'string' && name.length > 0) result.name = name;
+        out.push(result);
+      }
+    }
+    return out;
+  };
+
+  return normalize(json);
 }
 
 
