@@ -48,6 +48,7 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     let aborted = false;
     const controller = new AbortController();
+    
     async function load() {
       console.log('=== DASHBOARD PERIOD CHANGE ===');
       console.log('Period changed to:', selectedPeriod);
@@ -71,10 +72,21 @@ export const DashboardPage: React.FC = () => {
         if (!aborted) setIsLoading(false);
       }
     }
+    
+    // Загружаем данные сразу
     load();
+    
+    // Устанавливаем интервал для обновления каждую минуту
+    const interval = setInterval(() => {
+      if (!aborted) {
+        load();
+      }
+    }, 60000); // 60 секунд
+    
     return () => {
       aborted = true;
       controller.abort();
+      clearInterval(interval);
     };
   }, [selectedPeriod]);
 

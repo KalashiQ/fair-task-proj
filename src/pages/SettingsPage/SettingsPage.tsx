@@ -507,7 +507,7 @@ export const SettingsPage: React.FC = () => {
               </SelectField>
             </FieldBox>
             <PlusButton onClick={handleAddParameter} aria-label="Добавить параметр">
-              <img src={plusIcon} alt="Добавить" width={34} height={34} />
+              <img src={plusIcon} alt="Добавить" width={34} height={34} style={{ filter: 'brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(188deg) brightness(118%) contrast(119%)' }} />
             </PlusButton>
           </TableRow>
           {sortedParameters

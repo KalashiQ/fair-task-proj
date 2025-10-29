@@ -236,11 +236,20 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
       }
     }
     
+    // Загружаем данные сразу
     load();
+    
+    // Устанавливаем интервал для обновления каждую минуту
+    const interval = setInterval(() => {
+      if (!aborted) {
+        load();
+      }
+    }, 60000); // 60 секунд
     
     return () => {
       aborted = true;
       controller.abort();
+      clearInterval(interval);
     };
   }, []);
 
