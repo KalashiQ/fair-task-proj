@@ -49,6 +49,11 @@ export const DashboardPage: React.FC = () => {
     let aborted = false;
     const controller = new AbortController();
     async function load() {
+      console.log('=== DASHBOARD PERIOD CHANGE ===');
+      console.log('Period changed to:', selectedPeriod);
+      console.log('Triggering fetchOrderCount...');
+      console.log('================================');
+      
       setIsLoading(true);
       setError(null);
       try {

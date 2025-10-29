@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
 import { Header, PageHeader } from '@/shared/ui';
-import { fetchExecutors, createExecutor, fetchParameters, type CreateExecutorRequest, type Parameter } from '@/shared/api/metrics';
+import { fetchExecutors, createExecutor, fetchParameters, parseMaskToOperation, type CreateExecutorRequest, type Parameter } from '@/shared/api/metrics';
 import plusIcon from '@/assets/plus.svg';
 import minusIcon from '@/assets/minus.svg';
 import arrightIcon from '@/assets/arright.svg';
@@ -210,14 +210,18 @@ const ArrowButton = styled.button`
   background: transparent;
   padding: 8px 16px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: all 0.2s ease;
 
   &:disabled {
     opacity: 0.5;
     cursor: default;
   }
 
-  &:not(:disabled):hover { transform: translateY(-1px); }
+  &:hover { 
+    transform: translateY(-1px);
+    border-color: #00B4DD;
+    background-color: rgba(0, 180, 221, 0.1);
+  }
 `;
 
 const PageBox = styled.div`
@@ -231,6 +235,13 @@ const PageBox = styled.div`
   min-width: 64px;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: #00B4DD;
+    background-color: rgba(0, 180, 221, 0.1);
+  }
 `;
 
 const PageNumber = styled.div`
@@ -639,7 +650,24 @@ export const AddUserPage: React.FC = () => {
           name: executor.name,
           status: executor.status,
           order_count: executor.order_count,
-          parameters: executor.parameters || [],
+          parameters: (executor.parameters || []).map(param => {
+            const parsed = parseMaskToOperation(param.mask);
+            console.log(`Parsing mask "${param.mask}" for parameter ${param.id}:`, parsed);
+            const result: {
+              id: number;
+              operation: LogicalOperation;
+              value: string;
+              minValue?: string;
+              maxValue?: string;
+            } = {
+              id: param.id,
+              operation: parsed.operation,
+              value: parsed.value ?? '',
+            };
+            if (parsed.minValue) result.minValue = parsed.minValue;
+            if (parsed.maxValue) result.maxValue = parsed.maxValue;
+            return result;
+          }),
         }));
         
         setUsers(transformedUsers);
@@ -762,7 +790,23 @@ export const AddUserPage: React.FC = () => {
         name: executor.name,
         status: executor.status,
         order_count: executor.order_count,
-        parameters: executor.parameters || [],
+        parameters: (executor.parameters || []).map(param => {
+          const parsed = parseMaskToOperation(param.mask);
+          const result: {
+            id: number;
+            operation: LogicalOperation;
+            value: string;
+            minValue?: string;
+            maxValue?: string;
+          } = {
+            id: param.id,
+            operation: parsed.operation,
+            value: parsed.value ?? '',
+          };
+          if (parsed.minValue) result.minValue = parsed.minValue;
+          if (parsed.maxValue) result.maxValue = parsed.maxValue;
+          return result;
+        }),
       }));
       
       setUsers(transformedUsers);

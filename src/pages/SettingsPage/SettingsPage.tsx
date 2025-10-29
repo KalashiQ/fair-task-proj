@@ -191,14 +191,18 @@ const ArrowButton = styled.button`
   background: transparent;
   padding: 8px 16px;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: all 0.2s ease;
 
   &:disabled {
     opacity: 0.5;
     cursor: default;
   }
 
-  &:not(:disabled):hover { transform: translateY(-1px); }
+  &:hover { 
+    transform: translateY(-1px);
+    border-color: #00B4DD;
+    background-color: rgba(0, 180, 221, 0.1);
+  }
 `;
 
 const PageBox = styled.div`
@@ -212,6 +216,13 @@ const PageBox = styled.div`
   min-width: 64px;
   cursor: pointer;
   user-select: none;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: #00B4DD;
+    background-color: rgba(0, 180, 221, 0.1);
+  }
 `;
 
 const PageNumber = styled.div`

@@ -8,14 +8,16 @@ export interface Executor {
   order_count: number;
   parameters: Array<{
     id: number;
-    operation: '>' | '<' | '=' | '<x<';
-    value: string;
+    mask: string;
   }> | null;
 }
 
-export interface OrderCountResponse {
-  [isoDateTime: string]: number;
+export interface OrderCountDataPoint {
+  ts: string;
+  count: number;
 }
+
+export type OrderCountResponse = OrderCountDataPoint[];
 
 export interface CreateExecutorRequest {
   name: string;
@@ -45,12 +47,20 @@ export interface CreateParameterResponse {
   id: number;
 }
 
+export interface TotalOrderCountResponse {
+  count: number;
+}
+
+export interface CompleteOrderCountResponse {
+  count: number;
+}
+
 // Для dev окружения используем прокси /api в Vite, чтобы обойти CORS
 const BASE_URL = '/api';
 const EXECUTORS_BASE_URL = '/executors-api';
 
 function buildOrderCountUrl(period: MetricsPeriod): string {
-  const url = `${BASE_URL}/metric/order_count?limit=${encodeURIComponent(period)}`;
+  const url = `${BASE_URL}/metric/order_count_limit?limit=${encodeURIComponent(period)}`;
   return url;
 }
 
@@ -59,6 +69,14 @@ export async function fetchOrderCount(
   options?: { signal?: AbortSignal | null }
 ): Promise<OrderCountResponse> {
   const url = buildOrderCountUrl(period);
+  
+  console.log('=== PERIOD BUTTON DEBUG ===');
+  console.log('Selected period:', period);
+  console.log('Built URL:', url);
+  console.log('BASE_URL:', BASE_URL);
+  console.log('Full request URL:', url);
+  console.log('==========================');
+  
   const resp = await fetch(url, {
     method: 'GET',
     headers: { Accept: 'application/json' },
@@ -70,42 +88,90 @@ export async function fetchOrderCount(
   const json = await resp.json();
   // Debug: сырой ответ сервера
   console.debug('[metrics] /metric/order_count raw:', json);
-  const data: OrderCountResponse = {};
-  if (json && typeof json === 'object' && !Array.isArray(json)) {
-    for (const [key, value] of Object.entries(json as Record<string, unknown>)) {
-      const n = typeof value === 'number' ? value : Number(value);
-      if (Number.isFinite(n)) data[key] = n;
-    }
-    console.debug('[metrics] normalized object:', data);
-    return data;
-  }
+  
+  // Новый формат: массив объектов с ts и count
   if (Array.isArray(json)) {
-    for (const entry of json as unknown[]) {
-      if (Array.isArray(entry) && entry.length >= 2) {
-        const key = String(entry[0]);
-        const n = typeof entry[1] === 'number' ? entry[1] : Number(entry[1]);
-        if (Number.isFinite(n)) data[key] = n as number;
-      } else if (entry && typeof entry === 'object') {
-        const obj = entry as Record<string, unknown>;
-        for (const [key, value] of Object.entries(obj)) {
-          const n = typeof value === 'number' ? value : Number(value);
-          if (Number.isFinite(n)) data[key] = n;
+    const data: OrderCountResponse = [];
+    for (const item of json) {
+      if (item && typeof item === 'object' && 'ts' in item && 'count' in item) {
+        const ts = String(item.ts);
+        const count = typeof item.count === 'number' ? item.count : Number(item.count);
+        if (Number.isFinite(count)) {
+          data.push({ ts, count });
         }
       }
     }
-    console.debug('[metrics] normalized from array:', data);
+    console.debug('[metrics] normalized new format:', data);
     return data;
   }
+  
+  // Старый формат: объект с ключами-временными метками
+  if (json && typeof json === 'object' && !Array.isArray(json)) {
+    const data: OrderCountResponse = [];
+    for (const [key, value] of Object.entries(json as Record<string, unknown>)) {
+      const count = typeof value === 'number' ? value : Number(value);
+      if (Number.isFinite(count)) {
+        data.push({ ts: key, count });
+      }
+    }
+    console.debug('[metrics] normalized old format:', data);
+    return data;
+  }
+  
   throw new Error('Invalid response format for order_count');
 }
 
 export function sumOrderCount(data: OrderCountResponse): number {
   let sum = 0;
-  for (const value of Object.values(data)) {
-    const n = typeof value === 'number' ? value : Number(value);
-    if (Number.isFinite(n)) sum += n;
+  for (const item of data) {
+    const count = typeof item.count === 'number' ? item.count : Number(item.count);
+    if (Number.isFinite(count)) sum += count;
   }
   return sum;
+}
+
+/**
+ * Парсит маску обратно в операцию и значения
+ * "20x" -> { operation: '>', value: '20' }
+ * "x20" -> { operation: '<', value: '20' }
+ * "20" -> { operation: '=', value: '20' }
+ * "20x30" -> { operation: '<x<', minValue: '20', maxValue: '30' }
+ */
+export function parseMaskToOperation(mask: string): {
+  operation: '>' | '<' | '=' | '<x<';
+  value?: string;
+  minValue?: string;
+  maxValue?: string;
+} {
+  if (!mask || typeof mask !== 'string') {
+    return { operation: '=', value: '' };
+  }
+
+  // Диапазон: "20x30"
+  if (mask.includes('x') && mask.split('x').length === 2) {
+    const parts = mask.split('x');
+    const minValue = parts[0];
+    const maxValue = parts[1];
+    
+    if (minValue && maxValue) {
+      return { operation: '<x<', minValue, maxValue };
+    }
+  }
+
+  // Больше: "20x"
+  if (mask.endsWith('x') && !mask.startsWith('x')) {
+    const value = mask.slice(0, -1);
+    return { operation: '>', value };
+  }
+
+  // Меньше: "x20"
+  if (mask.startsWith('x') && !mask.endsWith('x')) {
+    const value = mask.slice(1);
+    return { operation: '<', value };
+  }
+
+  // Равно: "20"
+  return { operation: '=', value: mask };
 }
 
 
@@ -333,6 +399,60 @@ export async function createExecutor(
     throw new Error('Invalid response format for create executor');
   }
   return json as CreateExecutorResponse;
+}
+
+// Метрики: получение общего количества заявок
+export async function fetchTotalOrderCount(): Promise<TotalOrderCountResponse> {
+  const url = `${BASE_URL}/metric/order_count`;
+  
+  console.log('=== FETCHING TOTAL ORDER COUNT ===');
+  console.log('URL:', url);
+  console.log('==================================');
+  
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  });
+  
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch total order count (${resp.status})`);
+  }
+  
+  const json = await resp.json();
+  console.log('Total order count response:', json);
+  
+  if (!json || typeof json !== 'object' || typeof json.count !== 'number') {
+    throw new Error('Invalid response format for total order count');
+  }
+  
+  return json as TotalOrderCountResponse;
+}
+
+// Метрики: получение количества обработанных заявок
+export async function fetchCompleteOrderCount(): Promise<CompleteOrderCountResponse> {
+  const url = `${BASE_URL}/metric/complete_order_count`;
+  
+  console.log('=== FETCHING COMPLETE ORDER COUNT ===');
+  console.log('URL:', url);
+  console.log('=====================================');
+  
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+  });
+  
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch complete order count (${resp.status})`);
+  }
+  
+  const json = await resp.json();
+  console.log('Complete order count response:', json);
+  
+  if (!json || typeof json !== 'object' || typeof json.count !== 'number') {
+    throw new Error('Invalid response format for complete order count');
+  }
+  
+  return json as CompleteOrderCountResponse;
 }
 
 

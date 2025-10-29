@@ -2,7 +2,7 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
-import { fetchExecutors } from '@/shared';
+import { fetchExecutors, fetchTotalOrderCount, fetchCompleteOrderCount } from '@/shared';
 
 interface MetricsBlockProps {
   className?: string;
@@ -182,26 +182,62 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
   }
 
   const [chartData, setChartData] = useState<Array<{ performers: string; requests: number }>>([]);
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
+  const [completeOrders, setCompleteOrders] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let aborted = false;
     const controller = new AbortController();
+    
     async function load() {
+      console.log('=== METRICS BLOCK LOADING ===');
+      setLoading(true);
+      setError(null);
       
       try {
-        const executors = await fetchExecutors({ signal: controller.signal });
+        // Загружаем все данные параллельно
+        const [executors, totalOrdersData, completeOrdersData] = await Promise.all([
+          fetchExecutors({ signal: controller.signal }),
+          fetchTotalOrderCount(),
+          fetchCompleteOrderCount()
+        ]);
+        
         if (aborted) return;
+        
+        console.log('All data loaded:', { executors, totalOrdersData, completeOrdersData });
+        
+        // Обрабатываем данные исполнителей
         const data = executors.map((executor, idx) => ({ 
           performers: String(idx + 1), 
           requests: Math.max(0, Math.floor(Number(executor.order_count))) 
         }));
+        
         setChartData(data);
-      } catch {
+        setTotalOrders(totalOrdersData.count);
+        setCompleteOrders(completeOrdersData.count);
+        
+        console.log('Metrics block data set:', { 
+          chartDataLength: data.length, 
+          totalOrders: totalOrdersData.count, 
+          completeOrders: completeOrdersData.count 
+        });
+        
+      } catch (err) {
         if (aborted) return;
+        console.error('Failed to load metrics data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load metrics');
         setChartData([]);
+        setTotalOrders(null);
+        setCompleteOrders(null);
+      } finally {
+        if (!aborted) setLoading(false);
       }
     }
+    
     load();
+    
     return () => {
       aborted = true;
       controller.abort();
@@ -309,13 +345,17 @@ export const MetricsBlock: React.FC<MetricsBlockProps> = ({ className }) => {
         <LeftStack>
           <LeftBlockPrimary>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', padding: '0 16px 0 24px', height: '100%', justifyContent: 'center', alignItems: 'flex-start' }}>
-              <SKdT style={{ width: '100%', fontSize: 48, lineHeight: 1, wordWrap: 'break-word', textAlign: 'left' }}>132 896</SKdT>
+              <SKdT style={{ width: '100%', fontSize: 48, lineHeight: 1, wordWrap: 'break-word', textAlign: 'left' }}>
+                {loading ? '...' : error ? '—' : totalOrders?.toLocaleString() || '0'}
+              </SKdT>
               <div style={{ width: '100%', color: 'black', fontSize: 20, lineHeight: 1, fontFamily: "'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontWeight: '400', wordWrap: 'break-word', textAlign: 'left' }}>заявок за все время</div>
             </div>
           </LeftBlockPrimary>
           <LeftBlockSecondary>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', padding: '0 16px 0 24px', height: '100%', justifyContent: 'center', alignItems: 'flex-start' }}>
-              <SKdT style={{ width: '100%', fontSize: 48, lineHeight: 1, wordWrap: 'break-word', textAlign: 'left' }}>131 969</SKdT>
+              <SKdT style={{ width: '100%', fontSize: 48, lineHeight: 1, wordWrap: 'break-word', textAlign: 'left' }}>
+                {loading ? '...' : error ? '—' : completeOrders?.toLocaleString() || '0'}
+              </SKdT>
               <div style={{ width: '100%', color: 'black', fontSize: 20, lineHeight: 1, fontFamily: "'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", fontWeight: '400', wordWrap: 'break-word', textAlign: 'left' }}>обработанных заявок за все время</div>
             </div>
           </LeftBlockSecondary>

@@ -146,34 +146,34 @@ export const Header: React.FC<HeaderProps> = ({ className }) => {
       {/* Центральная часть - кнопки */}
       <CenterSection>
         <WorkingButton 
-          onClick={handleSettingsClick}
-          aria-label="Settings"
-          style={{ 
-            borderColor: isSettingsActive ? '#00B4DD' : '#C8C8C8',
-            backgroundColor: isSettingsActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
-          }}
-        >
-          <ButtonIcon src={settingsIcon} alt="Settings" />
-        </WorkingButton>
-        <WorkingButton 
           onClick={handleChartsClick}
-          aria-label="Charts"
+          aria-label="Dashboard"
           style={{ 
             borderColor: isDashboardActive ? '#00B4DD' : '#C8C8C8',
             backgroundColor: isDashboardActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
           }}
         >
-          <ButtonIcon src={chartsIcon} alt="Charts" />
+          <ButtonIcon src={chartsIcon} alt="Dashboard" />
+        </WorkingButton>
+        <WorkingButton 
+          onClick={handleSettingsClick}
+          aria-label="Parameters"
+          style={{ 
+            borderColor: isSettingsActive ? '#00B4DD' : '#C8C8C8',
+            backgroundColor: isSettingsActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
+          }}
+        >
+          <ButtonIcon src={settingsIcon} alt="Parameters" />
         </WorkingButton>
         <WorkingButton 
           onClick={handleAddUserClick}
-          aria-label="Add User"
+          aria-label="Executors"
           style={{ 
             borderColor: isAddUserActive ? '#00B4DD' : '#C8C8C8',
             backgroundColor: isAddUserActive ? 'rgba(0, 180, 221, 0.1)' : 'transparent'
           }}
         >
-          <ButtonIcon src={userIcon} alt="Add User" />
+          <ButtonIcon src={userIcon} alt="Executors" />
         </WorkingButton>
         
       </CenterSection>
