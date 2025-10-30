@@ -1,6 +1,32 @@
-# FairTask Engine
+# Executor balancer
 
-Modern React-based dashboard application built with TypeScript, Vite, and Feature-Sliced Design architecture.
+Hackathon project for МПИТ 2025 (FairTask Engine)
+
+> **Проект с хакатона МПИТ 2025**. Executor balancer — система балансировки и управления задачами между исполнителями.
+
+---
+
+## 📄 Техническое задание
+
+[Открыть техническое задание (PDF)](src/assets/kejs.pdf)
+
+---
+
+## 🖼️ Скриншоты интерфейса
+
+- **Дашборд**
+  
+  ![Dashboard screenshot](src/assets/dashboard.png)
+
+- **Страница добавления исполнителей**
+  
+  ![Executors screenshot](src/assets/executors.png)
+
+- **Настройка параметров**
+  
+  ![Params screenshot](src/assets/params.png)
+
+---
 
 ## 🚀 Quick Start
 
