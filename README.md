@@ -1,8 +1,6 @@
 # Executor balancer
 
-Hackathon project for МПИТ 2025 (FairTask Engine)
-
-> **Проект с хакатона МПИТ 2025**. Executor balancer — система балансировки и управления задачами между исполнителями.
+> **MPIT 2025 - FairTask Engine** - Умная система балансировки и управления задачами между исполнителями.
 
 ---
 
